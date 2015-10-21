@@ -1,24 +1,31 @@
 package com.hw.corcow.sampledatabase;
 
 import android.content.Intent;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.Html;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
+import android.widget.TextView;
 
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     ListView listView;
-    ArrayAdapter<AddressItem> mAdapter;
+//    ArrayAdapter<AddressItem> mAdapter;
+    SimpleCursorAdapter mAdapter;
+
+    int nameColumnIndex = -1;        // name들만 변경할 것이므로 name column index 변수 선언
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,7 +44,23 @@ public class MainActivity extends AppCompatActivity {
         });
 
         listView = (ListView)findViewById(R.id.listView);
-        mAdapter = new ArrayAdapter<AddressItem>(this, android.R.layout.simple_list_item_1);
+//        mAdapter = new ArrayAdapter<AddressItem>(this, android.R.layout.simple_list_item_1);
+        String[] from = { AddressDB.AddressTable.COLUMN_NAME , AddressDB.AddressTable.COLUMN_ADDRESS };
+        int[] to = {R.id.text_name , R.id.text_address};
+        mAdapter = new SimpleCursorAdapter(this, R.layout.view_item, null, from, to, SimpleCursorAdapter.FLAG_REGISTER_CONTENT_OBSERVER);
+        mAdapter.setViewBinder(new SimpleCursorAdapter.ViewBinder() {
+            @Override
+            public boolean setViewValue(View view, Cursor cursor, int columnIndex) {        // 가져올 뷰, 커서, 몇번째 인덱스(column)?
+                if (columnIndex == nameColumnIndex) {
+                    TextView tv = (TextView) view;
+                    String name = cursor.getString(columnIndex);
+                    tv.setText(Html.fromHtml("<b>"+ name +"</b>"));
+                    return true;            // true return -> Override
+                }
+                return false;               // false return -> Default action
+            }
+        });
+
         listView.setAdapter(mAdapter);
 
         Button btn = (Button)findViewById(R.id.btn_add);
@@ -52,11 +75,20 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        List<AddressItem> list = DataManager.getInstance().getAddressList(null);
-        mAdapter.clear();
-        for (AddressItem item : list) {
-            mAdapter.add(item);
-        }
+        Cursor c = DataManager.getInstance().getAddressCursor(null);
+        nameColumnIndex = c.getColumnIndex("name");             // name의 columnIndex를 받아온다.
+        mAdapter.changeCursor(c);               // 지금 가지고있는 커서를 close하고 이 커서를 설정해라.
+//        List<AddressItem> list = DataManager.getInstance().getAddressList(null);
+//        mAdapter.clear();
+//        for (AddressItem item : list) {
+//            mAdapter.add(item);
+//        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mAdapter.changeCursor(null);
     }
 
     @Override
