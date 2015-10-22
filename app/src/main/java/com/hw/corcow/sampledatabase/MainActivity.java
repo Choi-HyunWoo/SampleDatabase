@@ -11,6 +11,7 @@ import android.text.Html;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -54,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
                 if (columnIndex == nameColumnIndex) {
                     TextView tv = (TextView) view;
                     String name = cursor.getString(columnIndex);
-                    tv.setText(Html.fromHtml("<b>"+ name +"</b>"));
+                    tv.setText(Html.fromHtml("<b>" + name + "</b>"));
                     return true;            // true return -> Override
                 }
                 return false;               // false return -> Default action
@@ -62,6 +63,25 @@ public class MainActivity extends AppCompatActivity {
         });
 
         listView.setAdapter(mAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Cursor c = (Cursor) listView.getItemAtPosition(position);           // 리스트뷰에 있는 AddressItem은 커서임!!
+                AddressItem item = new AddressItem();
+                item._id = id;
+                item.name = c.getString(c.getColumnIndex(AddressDB.AddressTable.COLUMN_NAME));
+                item.address = c.getString(c.getColumnIndex(AddressDB.AddressTable.COLUMN_ADDRESS));
+                item.phone = c.getString(c.getColumnIndex(AddressDB.AddressTable.COLUMN_PHONE));
+                item.office = c.getString(c.getColumnIndex(AddressDB.AddressTable.COLUMN_OFFICE));
+                item.lastMessageId = c.getLong(c.getColumnIndex(AddressDB.AddressTable.COLUMN_LAST_MESSAGE_ID));
+                item.lastMessage = c.getString(c.getColumnIndex(AddressDB.MessageTable.COLUMN_MESSAGE));
+                item.timestamp = c.getLong(c.getColumnIndex(AddressDB.MessageTable.COLUMN_CREATED));
+
+                Intent intent = new Intent(MainActivity.this, ChattingActivity.class);
+                intent.putExtra(ChattingActivity.EXTRA_ITEM, item);
+                startActivity(intent);
+            }
+        });
 
         Button btn = (Button)findViewById(R.id.btn_add);
         btn.setOnClickListener(new View.OnClickListener() {
